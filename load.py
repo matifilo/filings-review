@@ -36,9 +36,9 @@ days = (pd.to_datetime(facts["end"]) - pd.to_datetime(facts["start"])).dt.days
 facts["months"] = (days / 30.44).round().fillna(0).astype(int)
 
 # 4) Remove duplicates: same line item + same period end + same length = the same number.
-#    Keep the preferred tag first, then the most recent filing (it includes any corrections).
+#    Keep the most recent filing first (it includes any corrections), then the preferred tag.
 rows_before = len(facts)
-facts = facts.sort_values(["priority", "filed"], ascending=[True, False])
+facts = facts.sort_values(["filed", "priority"], ascending=[False, True])
 facts = facts.drop_duplicates(subset=["line_item", "end", "months"], keep="first")
 
 # 5) Rebuild the database from scratch and load the clean table
@@ -51,6 +51,7 @@ db.unlink(missing_ok=True)
 con = sqlite3.connect(db)
 con.executescript(Path("sql/schema.sql").read_text(encoding="utf-8"))
 facts.to_sql("facts", con, if_exists="append", index=False)
+con.executescript(Path("sql/views.sql").read_text(encoding="utf-8"))
 con.execute("INSERT INTO load_log VALUES (?, ?, ?, ?)",
             (dt.datetime.now().isoformat(timespec="seconds"), snapshot.name, rows_before, len(facts)))
 con.commit()

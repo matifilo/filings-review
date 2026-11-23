@@ -19,7 +19,7 @@ LINE_ITEMS = {
     "admin_expense":       ("income",   ["GeneralAndAdministrativeExpense"]),
     "operating_income":    ("income",   ["OperatingIncomeLoss"]),
     "income_tax":          ("income",   ["IncomeTaxExpenseBenefit"]),
-    "net_income":          ("income",   ["NetIncomeLoss"]),
+    "net_income":          ("income",   ["NetIncomeLoss", "NetIncomeLossAvailableToCommonStockholdersBasic"]),
     "operating_cash_flow": ("cashflow", ["NetCashProvidedByUsedInOperatingActivities"]),
     "capex":               ("cashflow", ["PaymentsToAcquirePropertyPlantAndEquipment"]),
     "buybacks":            ("cashflow", ["PaymentsForRepurchaseOfCommonStock"]),
