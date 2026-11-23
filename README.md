@@ -1,4 +1,4 @@
-# Filings review: Quarterly review where every number is checked
+# Filings review: an AI-written quarterly review where every number is checked
 
 One command turns a company's SEC filings into a three-page quarterly business review for a CFO.
 Code does the arithmetic. Claude writes the commentary, and must cite a source fact behind every number.
