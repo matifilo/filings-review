@@ -1,16 +1,22 @@
-"""Phase 7: turn the approved review into a report you can open in a browser or print to PDF.
+"""Phase 7: lay the approved review out like a research note, then print it to PDF.
 
 It reads only output/review.md, output/facts_pack.json and output/validation_log.json,
 so the report cannot show a number that is not in the facts pack.
 """
 import html
 import json
+import math
 import re
+import subprocess
+import tempfile
+import time
 from datetime import date
 from pathlib import Path
 from string import Template
 
 import markdown
+
+import config
 
 approved = Path("output/review.md")
 if not approved.exists():
@@ -19,100 +25,175 @@ review = approved.read_text(encoding="utf-8")
 pack = json.loads(Path("output/facts_pack.json").read_text(encoding="utf-8"))
 log = json.loads(Path("output/validation_log.json").read_text(encoding="utf-8"))
 facts = {f["id"]: f for f in pack["facts"]}
-
-# 1) Commentary: Markdown -> HTML, then every "value [F:id]" becomes a number linked to its source
-CITED_VALUE = re.compile(r"((?:USD )?[+-]?[\d,.]+(?:m|%|x| pp| days)?) \[F:([\w.]+)\]")
-cited = []  # fact ids in the order they first appear
-
-
-def link(m):
-    value, fact = m.group(1), facts[m.group(2)]
-    if fact["id"] not in cited:
-        cited.append(fact["id"])
-    tip = html.escape(f"{fact['label']}, {fact['period']} (fact {fact['id']})")
-    return f'<a class="num" href="#f-{fact["id"]}" title="{tip}">{value}</a>'
-
-
-# Markdown needs an empty line before a list, or the list is printed as part of the paragraph
-review_md = re.sub(r"(?m)^(?!- )(.+)\n(?=- )", r"\1\n\n", review)
-commentary = CITED_VALUE.sub(link, markdown.markdown(review_md))
-numbers = len(re.findall(r"\[F:", review))
-
-# 2) Headline tiles: this quarter, with the same quarter last year underneath
-tiles = ""
-for fact_id, sub_id in (("revenue", "revenue_yoy"), ("gross_margin", None),
-                        ("operating_margin", None), ("free_cash_flow", None)):
-    cur, ly = facts[f"cur.{fact_id}"], facts[f"ly.{fact_id}"]
-    sub = (f"{facts['cur.' + sub_id]['display']} year on year" if sub_id
-           else f"{ly['period']}: {ly['display']}")
-    tiles += (f'<div class="tile"><div class="label">{cur["label"]}</div>'
-              f'<div class="value">{cur["display"]}</div><div class="sub">{sub}</div></div>')
-
-# 3) Trend charts: one small chart per measure, drawn as SVG (no chart library needed)
 flagged = {(f["period"], f["metric"].lower()) for f in pack["data_flags"]}
+NAVY, MIST, FLAG, SOFT, RULE = "#0f2a44", "#a9b7c4", "#b4461a", "#4d5b69", "#d9dfe5"
 
 
-def chart(metric):
-    # the trend facts are the ones named after a quarter, e.g. q2_fy2027.gross_margin
-    points = [f for f in pack["facts"] if re.fullmatch(r"q\d_fy\d{4}\." + metric, f["id"])]
-    values = [p["value"] for p in points]
-    lo, hi = min(values), max(values)
-    pad = (hi - lo) * 0.2 or 1
-    lo, hi = lo - pad, hi + pad
-    W, H, left, right, top, bottom = 360, 150, 10, 64, 14, 26
-    def x(i): return left + i * (W - left - right) / (len(points) - 1)
+def short(fact):
+    """The value without 'USD', 'm' or 'days', for tables whose heading already gives the unit."""
+    return re.sub(r"^USD |m$| days$", "", fact["display"])
+
+
+# 1) Commentary: every [F:id] becomes a small note number that links to its line in the notes list
+notes = []  # fact ids, in the order they first appear
+
+
+def cite(m):
+    fact_id = m.group(1)
+    if fact_id not in notes:
+        notes.append(fact_id)
+    n = notes.index(fact_id) + 1
+    tip = html.escape(f"{facts[fact_id]['label']}, {facts[fact_id]['period']}")
+    return f'<sup class="n"><a href="#n{n}" title="{tip}">{n}</a></sup>'
+
+
+def to_html(md):
+    md = re.sub(r"(?m)^(?!- )(.+)\n(?=- )", r"\1\n\n", md)  # Markdown needs a blank line before a list
+    return re.sub(r"\s*\[F:([\w.]+)\]", cite, markdown.markdown(md))
+
+
+parts = re.split(r"(?m)^## (.+)$", review)  # ["", "Headline", "text", "Growth and ...", "text", ...]
+sections = {parts[i].strip(): parts[i + 1].strip() for i in range(1, len(parts), 2)}
+
+# The first sentence of the Headline becomes the title; the rest goes underneath it
+first, rest = re.match(r"(.+?\.)\s+(.*)", sections["Headline"], re.S).groups()
+title = to_html(first).removeprefix("<p>").removesuffix("</p>")
+dek = to_html(rest)
+main_text = "".join(f"<h2>{name}</h2>{to_html(sections[name])}"
+                    for name in ("Growth and profitability", "Working capital and cash"))
+lower_text = "".join(f'<section class="blk"><h2>{name}</h2>{to_html(sections[name])}</section>'
+                     for name in ("What to watch next quarter", "Data caveats"))
+
+# 2) Sidebar: key data, verification, data checks
+KEY_DATA = [("Revenue, USD m", "revenue"), ("Revenue growth", "revenue_yoy"),
+            ("Gross margin", "gross_margin"), ("Operating margin", "operating_margin"),
+            ("Net income, USD m", "net_income"), ("Free cash flow, USD m", "free_cash_flow"),
+            ("Cash, USD m", "cash"), ("Inventory days", "dio_days"),
+            ("Cash cycle, days", "cash_conversion_cycle_days"), ("Cash conversion", "cash_conversion_ttm")]
+key_rows = "".join(f"<tr><td>{label}</td><td>{short(facts['cur.' + k])}</td><td>{short(facts['ly.' + k])}</td></tr>"
+                   for label, k in KEY_DATA)
+numbers = len(re.findall(r"\[F:", review))
+final = log[-1]
+verification = (f"All {numbers} numbers in the text match the source data ({len(notes)} distinct facts). "
+                f"Passed the automatic check on draft {final['round']}.")
+flag_notes = "".join(f'<p class="flag"><em>a</em> {f["period"]} {f["metric"].lower()} of {f["value"]}: '
+                     f'compared with the {f["compared_with"]}. Verify against the filing.</p>'
+                     for f in pack["data_flags"]) or '<p class="flag">No unusual figures.</p>'
+
+
+# 3) Exhibit 1: eight-quarter table; flagged cells get an "a"
+def trend(metric):
+    """The eight trend facts for one measure, oldest first (ids like q2_fy2027.gross_margin)."""
+    return [f for f in pack["facts"] if re.fullmatch(r"q\d_fy\d{4}\." + metric, f["id"])]
+
+
+def mark(f):
+    return '<sup class="fl">a</sup>' if (f["period"], f["label"].lower()) in flagged else ""
+
+
+quarters = [f["period"] for f in trend("gross_margin")]
+quarter_heads = "".join(f"<th>{q.replace('FY20', 'FY')}</th>" for q in quarters)  # Q2 FY2027 -> Q2 FY27
+summary_rows = "".join(
+    f"<tr><td>{label}</td>" + "".join(f"<td>{short(f)}{mark(f)}</td>" for f in trend(metric)) + "</tr>"
+    for label, metric in (("Revenue growth, year on year", "revenue_yoy"), ("Gross margin", "gross_margin"),
+                          ("Operating margin", "operating_margin"), ("Inventory days (TTM)", "dio_days")))
+
+
+# 4) Exhibits 2-4: charts drawn as SVG by hand (no chart library)
+def ticks_for(lo, hi):
+    """Four to six round numbers that cover lo..hi, e.g. 0, 10, 20, 30, 40, 50."""
+    for step in (0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100):
+        if (hi - lo) / step <= 5:
+            break
+    first, last = math.floor(lo / step) * step, math.ceil(hi / step) * step
+    return [first + i * step for i in range(round((last - first) / step) + 1)]
+
+
+def chart(series, bars=False):
+    """series: list of (name, colour, facts). Bars for one series, lines otherwise."""
+    W, H, left, right, top, bottom = 210, 128, 18, 42, 6, 24
+    values = [f["value"] for _, _, pts in series for f in pts]
+    ticks = ticks_for(min(values + [0]) if bars else min(values), max(values))
+    lo, hi = ticks[0], ticks[-1]
+    n = len(series[0][2])
+    slot = (W - left - right) / n
+    def x(i): return left + slot * (i + 0.5)
     def y(v): return top + (hi - v) * (H - top - bottom) / (hi - lo)
 
-    svg = [f'<svg viewBox="0 0 {W} {H}" role="img" aria-label="{points[0]["label"]}, last eight quarters">']
-    svg.append(f'<line x1="{left}" x2="{W - right}" y1="{H - bottom}" y2="{H - bottom}" stroke="#e1e0d9"/>')
-    if lo < 0 < hi:  # growth can be negative: show where zero is
-        svg.append(f'<line x1="{left}" x2="{W - right}" y1="{y(0):.1f}" y2="{y(0):.1f}" stroke="#c3c2b7"/>')
-    line = " ".join(f"{'M' if i == 0 else 'L'}{x(i):.1f},{y(v):.1f}" for i, v in enumerate(values))
-    svg.append(f'<path d="{line}" fill="none" stroke="#2a78d6" stroke-width="2" '
-               'stroke-linejoin="round" stroke-linecap="round"/>')
-    for i, p in enumerate(points):
-        is_flag = (p["period"], p["label"].lower()) in flagged
-        color = "#d03b3b" if is_flag else "#2a78d6"
-        svg.append(f'<circle cx="{x(i):.1f}" cy="{y(p["value"]):.1f}" r="4" fill="{color}" '
-                   f'stroke="#fcfcfb" stroke-width="2"><title>{p["period"]}: {p["display"]}'
-                   f'{" (flagged)" if is_flag else ""}</title></circle>')
-        if is_flag:
-            svg.append(f'<text x="{x(i):.1f}" y="{y(p["value"]) - 9:.1f}" font-size="10" '
-                       f'text-anchor="middle" fill="#d03b3b">flagged</text>')
-    last = points[-1]
-    svg.append(f'<text x="{x(len(points) - 1) + 8:.1f}" y="{y(last["value"]) + 4:.1f}" font-size="12" '
-               f'fill="#0b0b0b">{last["display"]}</text>')
-    for i in (0, len(points) - 1):  # name the first and last quarter on the axis
-        svg.append(f'<text x="{x(i):.1f}" y="{H - 8}" font-size="10" fill="#52514e" '
-                   f'text-anchor="{"start" if i == 0 else "end"}">{points[i]["period"]}</text>')
-    svg.append("</svg>")
-    return f'<div class="chart"><div class="title">{points[0]["label"]}</div>{"".join(svg)}</div>'
+    s = [f'<svg viewBox="0 0 {W} {H}" font-family="Source Sans 3, Segoe UI, sans-serif" role="img">']
+    for t in ticks:  # light horizontal gridlines with their values on the left
+        s.append(f'<line x1="{left}" x2="{W - right}" y1="{y(t):.1f}" y2="{y(t):.1f}" stroke="{RULE}" stroke-width=".6"/>'
+                 f'<text x="{left - 4}" y="{y(t) + 3:.1f}" font-size="8" fill="{SOFT}" text-anchor="end">{t:g}</text>')
+    for i, f in enumerate(series[0][2]):  # two-line quarter labels: Q3 / FY25
+        q, fy = f["period"].split()
+        s.append(f'<text x="{x(i):.1f}" y="{H - 13}" font-size="7.5" fill="{SOFT}" text-anchor="middle">{q}</text>'
+                 f'<text x="{x(i):.1f}" y="{H - 4}" font-size="7.5" fill="{SOFT}" text-anchor="middle">{fy.replace("FY20", "FY")}</text>')
+    for name, colour, pts in series:
+        if bars:  # muted bars, the quarter under review in navy
+            for i, f in enumerate(pts):
+                top_y, base_y = sorted((y(f["value"]), y(0)))
+                c = NAVY if i == n - 1 else MIST
+                s.append(f'<rect x="{x(i) - slot * .3:.1f}" y="{top_y:.1f}" width="{slot * .6:.1f}" '
+                         f'height="{max(base_y - top_y, .8):.1f}" fill="{c}"><title>{f["period"]}: {f["display"]}</title></rect>')
+        else:
+            d = " ".join(f"{'M' if i == 0 else 'L'}{x(i):.1f},{y(f['value']):.1f}" for i, f in enumerate(pts))
+            s.append(f'<path d="{d}" fill="none" stroke="{colour}" stroke-width="1.5" stroke-linejoin="round"/>')
+            for i, f in enumerate(pts):
+                s.append(f'<circle cx="{x(i):.1f}" cy="{y(f["value"]):.1f}" r="5" fill="transparent">'
+                         f'<title>{f["period"]}: {f["display"]}</title></circle>')
+        for i, f in enumerate(pts):  # ring flagged quarters
+            if mark(f):
+                s.append(f'<circle cx="{x(i):.1f}" cy="{y(f["value"]):.1f}" r="3.2" fill="#fff" stroke="{FLAG}" stroke-width="1.2"/>'
+                         f'<text x="{x(i) + 5:.1f}" y="{y(f["value"]) - 4:.1f}" font-size="8" font-style="italic" fill="{FLAG}">a</text>')
+        last = pts[-1]  # label the latest value at the right-hand end, with the series name above it
+        end_y = y(last["value"])
+        if name:
+            s.append(f'<text x="{W - right + 4}" y="{end_y - 3:.1f}" font-size="7.5" fill="{SOFT}">{name}</text>')
+        s.append(f'<text x="{W - right + 4}" y="{end_y + (8 if name else 3):.1f}" font-size="8.5" font-weight="600" '
+                 f'fill="{colour}">{short(last)}</text>')
+    s.append("</svg>")
+    return "".join(s)
 
 
-charts = "".join(chart(m) for m in ("revenue_yoy", "gross_margin", "operating_margin", "dio_days"))
+chart_growth = chart([("", NAVY, trend("revenue_yoy"))], bars=True)
+chart_margins = chart([("Gross", NAVY, trend("gross_margin")), ("Operating", SOFT, trend("operating_margin"))])
+chart_inventory = chart([("", NAVY, trend("dio_days"))])
 
-# 4) Key figures table and the sources appendix
-kpi_rows = ""
-for fact_id, fact in facts.items():
-    if fact_id.startswith("cur.") and "ly." + fact_id[4:] in facts:
-        kpi_rows += (f'<tr><td>{fact["label"]}</td><td class="n">{fact["display"]}</td>'
-                     f'<td class="n">{facts["ly." + fact_id[4:]]["display"]}</td></tr>')
-source_rows = "".join(
-    f'<tr id="f-{i}"><td><code>{i}</code></td><td>{facts[i]["label"]}</td>'
-    f'<td>{facts[i]["period"]}</td><td class="n">{facts[i]["display"]}</td></tr>' for i in cited)
+# 5) Notes: the source of every number, in order of first appearance
+note_rows = "".join(f'<li id="n{n}"><span class="nn">{n}</span><span class="nl">{facts[i]["label"]}, '
+                    f'{facts[i]["period"]}</span><span class="nv">{facts[i]["display"]}</span></li>'
+                    for n, i in enumerate(notes, 1))
+method = ("Figures come from the company's 10-Q and 10-K filings (SEC XBRL data), loaded into SQLite. "
+          "Standalone quarters, margins, growth and working-capital days are calculated in SQL. "
+          f"The commentary is written by {config.MODEL} from a pack of {len(facts)} approved facts: it may not "
+          "calculate numbers and must cite a fact for each one. A program checks every number against the fact "
+          "it cites and sends errors back until the draft passes. Unusual margins are flagged before writing.")
 
-# 5) Fill the template and save
-final = log[-1]
-check = (f"<strong>Checked:</strong> all {numbers} numbers in the commentary match their source facts "
-         f"(passed in round {final['round']} of the write-check-revise loop, {final['time'].replace('T', ' ')}). "
-         "Hover over a number to see its source; click it to jump to the source table.")
+# 6) Fill the template, save the HTML, print the PDF
 page = Template(Path("templates/report.html").read_text(encoding="utf-8")).substitute(
-    company=pack["company"]["name"], ticker=pack["company"]["ticker"],
-    period=pack["latest_period"], period_ly=facts["ly.revenue"]["period"],
-    period_end=pack["latest_period_end"], snapshot=pack["snapshot"], generated=date.today().isoformat(),
-    check=check, tiles=tiles, commentary=commentary, charts=charts,
-    kpi_rows=kpi_rows, source_rows=source_rows, method=" ".join(pack["method_notes"]),
+    company=pack["company"]["name"], ticker=pack["company"]["ticker"], period=pack["latest_period"],
+    title=title, dek=dek, main_text=main_text, lower_text=lower_text, key_rows=key_rows,
+    verification=verification, flag_notes=flag_notes, quarter_heads=quarter_heads, summary_rows=summary_rows,
+    chart_growth=chart_growth, chart_margins=chart_margins, chart_inventory=chart_inventory,
+    note_rows=note_rows, method=method, generated=date.today().strftime("%d %B %Y").lstrip("0"),
 )
-out = Path("output/report.html")
-out.write_text(page, encoding="utf-8")
-print(f"Report: {numbers} cited numbers linked to {len(cited)} facts -> {out}")
+html_path, pdf_path = Path("output/report.html"), Path("output/report.pdf")
+html_path.write_text(page, encoding="utf-8")
+
+EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+pdf_path.unlink(missing_ok=True)  # never leave an old PDF behind if printing fails
+with tempfile.TemporaryDirectory() as profile:
+    subprocess.run([EDGE, "--headless=new", "--disable-gpu", "--no-first-run", f"--user-data-dir={profile}",
+                    "--no-pdf-header-footer", "--virtual-time-budget=15000",
+                    f"--print-to-pdf={pdf_path.resolve()}", html_path.resolve().as_uri()],
+                   capture_output=True, timeout=120)
+    size = -1
+    for _ in range(60):  # Edge can return before the file is fully written: wait until its size stops changing
+        time.sleep(0.5)
+        new = pdf_path.stat().st_size if pdf_path.exists() else -1
+        if new > 0 and new == size:
+            break
+        size = new
+if not pdf_path.exists():
+    raise SystemExit("Edge did not produce the PDF. Is Microsoft Edge installed in the usual place?")
+print(f"Report: {numbers} numbers linked to {len(notes)} notes -> {html_path} and {pdf_path}")
