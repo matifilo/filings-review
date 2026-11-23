@@ -30,3 +30,5 @@ LINE_ITEMS = {
     "total_assets":        ("balance",  ["Assets"]),
     "equity":              ("balance",  ["StockholdersEquity"]),
 }
+
+MODEL = "claude-opus-5-5"  # which Claude model writes the review
