@@ -1,0 +1,676 @@
+{
+ "company": {
+  "name": "Logitech International",
+  "ticker": "LOGI",
+  "cik": "0001032975",
+  "currency": "USD"
+ },
+ "snapshot": "2026-11-22",
+ "latest_period": "Q2 FY2027",
+ "latest_period_end": "2026-09-30",
+ "method_notes": [
+  "All numbers come from the company's 10-Q and 10-K filings (SEC XBRL data).",
+  "Q4 figures and most quarterly cash flows are derived: year to date minus the previous year to date.",
+  "Cost of goods sold = revenue - gross profit.",
+  "Working-capital days use quarter-end balances over trailing-twelve-month (TTM) flows."
+ ],
+ "facts": [
+  {
+   "id": "cur.revenue",
+   "label": "Revenue",
+   "period": "Q2 FY2027",
+   "unit": "usd_m",
+   "value": 1218.8,
+   "display": "USD 1,218.8m"
+  },
+  {
+   "id": "cur.revenue_yoy",
+   "label": "Revenue growth, year on year",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 2.8,
+   "display": "2.8%"
+  },
+  {
+   "id": "cur.gross_margin",
+   "label": "Gross margin",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 44.9,
+   "display": "44.9%"
+  },
+  {
+   "id": "cur.rnd_pct",
+   "label": "R&D expense / revenue",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 6.8,
+   "display": "6.8%"
+  },
+  {
+   "id": "cur.selling_pct",
+   "label": "Selling and marketing expense / revenue",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 18.0,
+   "display": "18.0%"
+  },
+  {
+   "id": "cur.admin_pct",
+   "label": "General and admin expense / revenue",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 3.5,
+   "display": "3.5%"
+  },
+  {
+   "id": "cur.operating_margin",
+   "label": "Operating margin",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 16.5,
+   "display": "16.5%"
+  },
+  {
+   "id": "cur.net_income",
+   "label": "Net income",
+   "period": "Q2 FY2027",
+   "unit": "usd_m",
+   "value": 180.0,
+   "display": "USD 180.0m"
+  },
+  {
+   "id": "cur.net_income_yoy",
+   "label": "Net income growth, year on year",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 5.5,
+   "display": "5.5%"
+  },
+  {
+   "id": "cur.net_margin",
+   "label": "Net margin",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 14.8,
+   "display": "14.8%"
+  },
+  {
+   "id": "cur.operating_cash_flow",
+   "label": "Operating cash flow",
+   "period": "Q2 FY2027",
+   "unit": "usd_m",
+   "value": 163.6,
+   "display": "USD 163.6m"
+  },
+  {
+   "id": "cur.free_cash_flow",
+   "label": "Free cash flow (operating cash flow - capex)",
+   "period": "Q2 FY2027",
+   "unit": "usd_m",
+   "value": 148.8,
+   "display": "USD 148.8m"
+  },
+  {
+   "id": "cur.buybacks",
+   "label": "Share buybacks",
+   "period": "Q2 FY2027",
+   "unit": "usd_m",
+   "value": 170.8,
+   "display": "USD 170.8m"
+  },
+  {
+   "id": "cur.cash",
+   "label": "Cash and cash equivalents",
+   "period": "Q2 FY2027",
+   "unit": "usd_m",
+   "value": 1507.6,
+   "display": "USD 1,507.6m"
+  },
+  {
+   "id": "cur.dso_days",
+   "label": "Days sales outstanding (TTM)",
+   "period": "Q2 FY2027",
+   "unit": "days",
+   "value": 55.0,
+   "display": "55 days"
+  },
+  {
+   "id": "cur.dio_days",
+   "label": "Days inventory outstanding (TTM)",
+   "period": "Q2 FY2027",
+   "unit": "days",
+   "value": 75.0,
+   "display": "75 days"
+  },
+  {
+   "id": "cur.dpo_days",
+   "label": "Days payables outstanding (TTM)",
+   "period": "Q2 FY2027",
+   "unit": "days",
+   "value": 87.0,
+   "display": "87 days"
+  },
+  {
+   "id": "cur.cash_conversion_cycle_days",
+   "label": "Cash conversion cycle (TTM)",
+   "period": "Q2 FY2027",
+   "unit": "days",
+   "value": 44.0,
+   "display": "44 days"
+  },
+  {
+   "id": "cur.cash_conversion_ttm",
+   "label": "Operating cash flow / net income (TTM)",
+   "period": "Q2 FY2027",
+   "unit": "x",
+   "value": 1.25,
+   "display": "1.25x"
+  },
+  {
+   "id": "cur.inventory",
+   "label": "Inventory",
+   "period": "Q2 FY2027",
+   "unit": "usd_m",
+   "value": 556.8,
+   "display": "USD 556.8m"
+  },
+  {
+   "id": "cur.inventory_yoy",
+   "label": "Inventory growth, year on year",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 7.6,
+   "display": "7.6%"
+  },
+  {
+   "id": "ly.revenue",
+   "label": "Revenue",
+   "period": "Q2 FY2026",
+   "unit": "usd_m",
+   "value": 1186.1,
+   "display": "USD 1,186.1m"
+  },
+  {
+   "id": "ly.revenue_yoy",
+   "label": "Revenue growth, year on year",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": 6.3,
+   "display": "6.3%"
+  },
+  {
+   "id": "ly.gross_margin",
+   "label": "Gross margin",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": 43.4,
+   "display": "43.4%"
+  },
+  {
+   "id": "ly.rnd_pct",
+   "label": "R&D expense / revenue",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": 6.4,
+   "display": "6.4%"
+  },
+  {
+   "id": "ly.selling_pct",
+   "label": "Selling and marketing expense / revenue",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": 16.8,
+   "display": "16.8%"
+  },
+  {
+   "id": "ly.admin_pct",
+   "label": "General and admin expense / revenue",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": 3.5,
+   "display": "3.5%"
+  },
+  {
+   "id": "ly.operating_margin",
+   "label": "Operating margin",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": 16.1,
+   "display": "16.1%"
+  },
+  {
+   "id": "ly.net_income",
+   "label": "Net income",
+   "period": "Q2 FY2026",
+   "unit": "usd_m",
+   "value": 170.7,
+   "display": "USD 170.7m"
+  },
+  {
+   "id": "ly.net_income_yoy",
+   "label": "Net income growth, year on year",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": 17.3,
+   "display": "17.3%"
+  },
+  {
+   "id": "ly.net_margin",
+   "label": "Net margin",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": 14.4,
+   "display": "14.4%"
+  },
+  {
+   "id": "ly.operating_cash_flow",
+   "label": "Operating cash flow",
+   "period": "Q2 FY2026",
+   "unit": "usd_m",
+   "value": 228.8,
+   "display": "USD 228.8m"
+  },
+  {
+   "id": "ly.free_cash_flow",
+   "label": "Free cash flow (operating cash flow - capex)",
+   "period": "Q2 FY2026",
+   "unit": "usd_m",
+   "value": 212.3,
+   "display": "USD 212.3m"
+  },
+  {
+   "id": "ly.buybacks",
+   "label": "Share buybacks",
+   "period": "Q2 FY2026",
+   "unit": "usd_m",
+   "value": 106.6,
+   "display": "USD 106.6m"
+  },
+  {
+   "id": "ly.cash",
+   "label": "Cash and cash equivalents",
+   "period": "Q2 FY2026",
+   "unit": "usd_m",
+   "value": 1375.8,
+   "display": "USD 1,375.8m"
+  },
+  {
+   "id": "ly.dso_days",
+   "label": "Days sales outstanding (TTM)",
+   "period": "Q2 FY2026",
+   "unit": "days",
+   "value": 55.0,
+   "display": "55 days"
+  },
+  {
+   "id": "ly.dio_days",
+   "label": "Days inventory outstanding (TTM)",
+   "period": "Q2 FY2026",
+   "unit": "days",
+   "value": 70.0,
+   "display": "70 days"
+  },
+  {
+   "id": "ly.dpo_days",
+   "label": "Days payables outstanding (TTM)",
+   "period": "Q2 FY2026",
+   "unit": "days",
+   "value": 79.0,
+   "display": "79 days"
+  },
+  {
+   "id": "ly.cash_conversion_cycle_days",
+   "label": "Cash conversion cycle (TTM)",
+   "period": "Q2 FY2026",
+   "unit": "days",
+   "value": 46.0,
+   "display": "46 days"
+  },
+  {
+   "id": "ly.cash_conversion_ttm",
+   "label": "Operating cash flow / net income (TTM)",
+   "period": "Q2 FY2026",
+   "unit": "x",
+   "value": 1.29,
+   "display": "1.29x"
+  },
+  {
+   "id": "ly.inventory",
+   "label": "Inventory",
+   "period": "Q2 FY2026",
+   "unit": "usd_m",
+   "value": 517.7,
+   "display": "USD 517.7m"
+  },
+  {
+   "id": "ly.inventory_yoy",
+   "label": "Inventory growth, year on year",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": -0.5,
+   "display": "-0.5%"
+  },
+  {
+   "id": "cur.gross_margin_change_yoy",
+   "label": "Gross margin change vs same quarter last year",
+   "period": "Q2 FY2027",
+   "unit": "pp",
+   "value": 1.5,
+   "display": "+1.5 pp"
+  },
+  {
+   "id": "cur.operating_margin_change_yoy",
+   "label": "Operating margin change vs same quarter last year",
+   "period": "Q2 FY2027",
+   "unit": "pp",
+   "value": 0.3,
+   "display": "+0.3 pp"
+  },
+  {
+   "id": "ytd.revenue",
+   "label": "Revenue, fiscal year to date",
+   "period": "6M FY2027",
+   "unit": "usd_m",
+   "value": 2446.1,
+   "display": "USD 2,446.1m"
+  },
+  {
+   "id": "ytd.revenue_yoy",
+   "label": "Revenue growth, fiscal year to date",
+   "period": "6M FY2027",
+   "unit": "pct",
+   "value": 4.8,
+   "display": "4.8%"
+  },
+  {
+   "id": "ytd.net_income",
+   "label": "Net income, fiscal year to date",
+   "period": "6M FY2027",
+   "unit": "usd_m",
+   "value": 415.7,
+   "display": "USD 415.7m"
+  },
+  {
+   "id": "ytd.net_income_yoy",
+   "label": "Net income growth, fiscal year to date",
+   "period": "6M FY2027",
+   "unit": "pct",
+   "value": 31.3,
+   "display": "31.3%"
+  },
+  {
+   "id": "q3_fy2025.revenue_yoy",
+   "label": "Revenue growth, year on year",
+   "period": "Q3 FY2025",
+   "unit": "pct",
+   "value": 6.8,
+   "display": "6.8%"
+  },
+  {
+   "id": "q3_fy2025.gross_margin",
+   "label": "Gross margin",
+   "period": "Q3 FY2025",
+   "unit": "pct",
+   "value": 42.9,
+   "display": "42.9%"
+  },
+  {
+   "id": "q3_fy2025.operating_margin",
+   "label": "Operating margin",
+   "period": "Q3 FY2025",
+   "unit": "pct",
+   "value": 17.5,
+   "display": "17.5%"
+  },
+  {
+   "id": "q3_fy2025.dio_days",
+   "label": "Days inventory outstanding (TTM)",
+   "period": "Q3 FY2025",
+   "unit": "days",
+   "value": 68.0,
+   "display": "68 days"
+  },
+  {
+   "id": "q4_fy2025.revenue_yoy",
+   "label": "Revenue growth, year on year",
+   "period": "Q4 FY2025",
+   "unit": "pct",
+   "value": -0.1,
+   "display": "-0.1%"
+  },
+  {
+   "id": "q4_fy2025.gross_margin",
+   "label": "Gross margin",
+   "period": "Q4 FY2025",
+   "unit": "pct",
+   "value": 43.1,
+   "display": "43.1%"
+  },
+  {
+   "id": "q4_fy2025.operating_margin",
+   "label": "Operating margin",
+   "period": "Q4 FY2025",
+   "unit": "pct",
+   "value": 10.5,
+   "display": "10.5%"
+  },
+  {
+   "id": "q4_fy2025.dio_days",
+   "label": "Days inventory outstanding (TTM)",
+   "period": "Q4 FY2025",
+   "unit": "days",
+   "value": 71.0,
+   "display": "71 days"
+  },
+  {
+   "id": "q1_fy2026.revenue_yoy",
+   "label": "Revenue growth, year on year",
+   "period": "Q1 FY2026",
+   "unit": "pct",
+   "value": 5.5,
+   "display": "5.5%"
+  },
+  {
+   "id": "q1_fy2026.gross_margin",
+   "label": "Gross margin",
+   "period": "Q1 FY2026",
+   "unit": "pct",
+   "value": 41.7,
+   "display": "41.7%"
+  },
+  {
+   "id": "q1_fy2026.operating_margin",
+   "label": "Operating margin",
+   "period": "Q1 FY2026",
+   "unit": "pct",
+   "value": 14.1,
+   "display": "14.1%"
+  },
+  {
+   "id": "q1_fy2026.dio_days",
+   "label": "Days inventory outstanding (TTM)",
+   "period": "Q1 FY2026",
+   "unit": "days",
+   "value": 69.0,
+   "display": "69 days"
+  },
+  {
+   "id": "q2_fy2026.revenue_yoy",
+   "label": "Revenue growth, year on year",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": 6.3,
+   "display": "6.3%"
+  },
+  {
+   "id": "q2_fy2026.gross_margin",
+   "label": "Gross margin",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": 43.4,
+   "display": "43.4%"
+  },
+  {
+   "id": "q2_fy2026.operating_margin",
+   "label": "Operating margin",
+   "period": "Q2 FY2026",
+   "unit": "pct",
+   "value": 16.1,
+   "display": "16.1%"
+  },
+  {
+   "id": "q2_fy2026.dio_days",
+   "label": "Days inventory outstanding (TTM)",
+   "period": "Q2 FY2026",
+   "unit": "days",
+   "value": 70.0,
+   "display": "70 days"
+  },
+  {
+   "id": "q3_fy2026.revenue_yoy",
+   "label": "Revenue growth, year on year",
+   "period": "Q3 FY2026",
+   "unit": "pct",
+   "value": 6.1,
+   "display": "6.1%"
+  },
+  {
+   "id": "q3_fy2026.gross_margin",
+   "label": "Gross margin",
+   "period": "Q3 FY2026",
+   "unit": "pct",
+   "value": 43.2,
+   "display": "43.2%"
+  },
+  {
+   "id": "q3_fy2026.operating_margin",
+   "label": "Operating margin",
+   "period": "Q3 FY2026",
+   "unit": "pct",
+   "value": 20.1,
+   "display": "20.1%"
+  },
+  {
+   "id": "q3_fy2026.dio_days",
+   "label": "Days inventory outstanding (TTM)",
+   "period": "Q3 FY2026",
+   "unit": "days",
+   "value": 60.0,
+   "display": "60 days"
+  },
+  {
+   "id": "q4_fy2026.revenue_yoy",
+   "label": "Revenue growth, year on year",
+   "period": "Q4 FY2026",
+   "unit": "pct",
+   "value": 7.4,
+   "display": "7.4%"
+  },
+  {
+   "id": "q4_fy2026.gross_margin",
+   "label": "Gross margin",
+   "period": "Q4 FY2026",
+   "unit": "pct",
+   "value": 44.5,
+   "display": "44.5%"
+  },
+  {
+   "id": "q4_fy2026.operating_margin",
+   "label": "Operating margin",
+   "period": "Q4 FY2026",
+   "unit": "pct",
+   "value": 12.5,
+   "display": "12.5%"
+  },
+  {
+   "id": "q4_fy2026.dio_days",
+   "label": "Days inventory outstanding (TTM)",
+   "period": "Q4 FY2026",
+   "unit": "days",
+   "value": 65.0,
+   "display": "65 days"
+  },
+  {
+   "id": "q1_fy2027.revenue_yoy",
+   "label": "Revenue growth, year on year",
+   "period": "Q1 FY2027",
+   "unit": "pct",
+   "value": 6.9,
+   "display": "6.9%"
+  },
+  {
+   "id": "q1_fy2027.gross_margin",
+   "label": "Gross margin",
+   "period": "Q1 FY2027",
+   "unit": "pct",
+   "value": 49.5,
+   "display": "49.5%"
+  },
+  {
+   "id": "q1_fy2027.operating_margin",
+   "label": "Operating margin",
+   "period": "Q1 FY2027",
+   "unit": "pct",
+   "value": 21.1,
+   "display": "21.1%"
+  },
+  {
+   "id": "q1_fy2027.dio_days",
+   "label": "Days inventory outstanding (TTM)",
+   "period": "Q1 FY2027",
+   "unit": "days",
+   "value": 66.0,
+   "display": "66 days"
+  },
+  {
+   "id": "q2_fy2027.revenue_yoy",
+   "label": "Revenue growth, year on year",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 2.8,
+   "display": "2.8%"
+  },
+  {
+   "id": "q2_fy2027.gross_margin",
+   "label": "Gross margin",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 44.9,
+   "display": "44.9%"
+  },
+  {
+   "id": "q2_fy2027.operating_margin",
+   "label": "Operating margin",
+   "period": "Q2 FY2027",
+   "unit": "pct",
+   "value": 16.5,
+   "display": "16.5%"
+  },
+  {
+   "id": "q2_fy2027.dio_days",
+   "label": "Days inventory outstanding (TTM)",
+   "period": "Q2 FY2027",
+   "unit": "days",
+   "value": 75.0,
+   "display": "75 days"
+  }
+ ],
+ "missing": [],
+ "data_flags": [
+  {
+   "period": "Q1 FY2027",
+   "metric": "Gross margin",
+   "value": "49.5%",
+   "compared_with": "median of the other recent quarters, 43.2%",
+   "note": "Unusual move. Report it as a caveat; do not explain it unless the filing does."
+  },
+  {
+   "period": "Q1 FY2027",
+   "metric": "Operating margin",
+   "value": "21.1%",
+   "compared_with": "same quarter last year, change +6.9 pp",
+   "note": "Unusual move. Report it as a caveat; do not explain it unless the filing does."
+  }
+ ]
+}
