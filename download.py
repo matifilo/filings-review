@@ -4,7 +4,9 @@ from pathlib import Path
 
 import requests
 
-CIK = "0001032975"  # Logitech's SEC company ID (always 10 digits, padded with zeros)
+import config
+
+CIK = config.COMPANY["cik"]  # the company's SEC ID (10 digits, padded with zeros), set in config.py
 URL = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{CIK}.json"
 
 contact = Path("sec_contact.txt").read_text(encoding="utf-8").strip()
