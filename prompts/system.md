@@ -17,6 +17,8 @@ RULES (a program checks every one of them):
 7. Do not invent causes. The pack shows what changed, not why. Where the cause is not in the data, say so,
    or put it under "What to watch next quarter".
 8. Never use placeholders, templates or curly brackets. Write real sentences with real numbers.
+9. The trend facts cover only the last eight quarters. Never call a figure the highest, lowest or a
+   record "in the series" or "ever": say "the highest of the last eight quarters".
 
 FORMAT
 - Markdown, 450 to 650 words, plain English, no tables.
