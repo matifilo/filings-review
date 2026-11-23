@@ -1,0 +1,8 @@
+# Exact versions this project was built and tested with.
+# Install them all with:  .venv\Scripts\python -m pip install -r requirements.txt
+requests==2.34.2
+pandas==3.1.1
+anthropic==2.12.0
+python-dotenv==1.2.4
+Markdown==3.11.3
+pytest==9.2.0

@@ -17,6 +17,7 @@ from string import Template
 import markdown
 
 import config
+import validate
 
 approved = Path("output/review.md")
 if not approved.exists():
@@ -24,6 +25,12 @@ if not approved.exists():
 review = approved.read_text(encoding="utf-8")
 pack = json.loads(Path("output/facts_pack.json").read_text(encoding="utf-8"))
 log = json.loads(Path("output/validation_log.json").read_text(encoding="utf-8"))
+# Check the review again against the CURRENT facts pack: if the data changed since the review was
+# approved, its numbers may be out of date, and the report must not be printed
+problems = validate.check(review, pack)
+if problems:
+    raise SystemExit("The approved review does not match the current facts pack. Run review.py again.\n - "
+                     + "\n - ".join(problems))
 facts = {f["id"]: f for f in pack["facts"]}
 flagged = {(f["period"], f["metric"].lower()) for f in pack["data_flags"]}
 NAVY, MIST, FLAG, SOFT, RULE = "#0f2a44", "#a9b7c4", "#b4461a", "#4d5b69", "#d9dfe5"
