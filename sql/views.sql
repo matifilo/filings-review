@@ -92,3 +92,69 @@ FROM flows AS f
 LEFT JOIN balances AS b USING (period_end)
 WHERE f.revenue IS NOT NULL
 ORDER BY f.period_end;
+
+
+-- ===================== Phase 3B: KPIs =====================
+
+-- 3) Ratios, growth and trailing-twelve-month (TTM) metrics, one row per quarter.
+CREATE VIEW kpi_quarterly AS
+WITH ttm AS (
+    -- Rolling sums of the last 4 quarters (like =SUM(B2:B5) dragged down in Excel)
+    SELECT q.*,
+           SUM(revenue)             OVER last4 AS revenue_ttm,
+           SUM(cogs)                OVER last4 AS cogs_ttm,
+           SUM(net_income)          OVER last4 AS net_income_ttm,
+           SUM(operating_cash_flow) OVER last4 AS ocf_ttm,
+           COUNT(*)                 OVER last4 AS n_quarters,
+           MIN(period_end)          OVER last4 AS window_start
+    FROM quarterly AS q
+    WINDOW last4 AS (ORDER BY period_end ROWS BETWEEN 3 PRECEDING AND CURRENT ROW)
+),
+checked AS (
+    -- A TTM figure only counts if the 4 rows really are 4 back-to-back quarters
+    -- (e.g. for 2026-09-30 the window must start at 2025-12-31). Otherwise it is left empty.
+    SELECT *,
+           (n_quarters = 4
+            AND window_start = date(period_end, 'start of month', '-8 months', '-1 day')) AS ttm_ok
+    FROM ttm
+)
+SELECT c.period_end,
+       c.fiscal_year,
+       c.fiscal_quarter,
+
+       -- Growth: this quarter vs the same quarter one year earlier (ly = "last year")
+       c.revenue,
+       c.revenue / ly.revenue - 1                                         AS revenue_yoy,
+
+       -- Margins: each line as a share of revenue
+       c.gross_profit / c.revenue                                         AS gross_margin,
+       c.gross_profit / c.revenue - ly.gross_profit / ly.revenue          AS gross_margin_change_yoy,
+       c.rnd_expense / c.revenue                                          AS rnd_pct,
+       c.selling_expense / c.revenue                                      AS selling_pct,
+       c.admin_expense / c.revenue                                        AS admin_pct,
+       c.operating_income / c.revenue                                     AS operating_margin,
+       c.operating_income / c.revenue - ly.operating_income / ly.revenue  AS operating_margin_change_yoy,
+       c.net_income,
+       c.net_income / ly.net_income - 1                                   AS net_income_yoy,
+       c.net_income / c.revenue                                           AS net_margin,
+
+       -- Cash
+       c.operating_cash_flow,
+       c.operating_cash_flow - c.capex                                    AS free_cash_flow,
+       c.buybacks,
+       c.cash,
+
+       -- Working capital, in days (balance at quarter end vs the last 12 months of flows)
+       CASE WHEN c.ttm_ok THEN c.revenue_ttm END                          AS revenue_ttm,
+       CASE WHEN c.ttm_ok THEN c.receivables / c.revenue_ttm * 365 END    AS dso_days,
+       CASE WHEN c.ttm_ok THEN c.inventory   / c.cogs_ttm    * 365 END    AS dio_days,
+       CASE WHEN c.ttm_ok THEN c.payables    / c.cogs_ttm    * 365 END    AS dpo_days,
+       CASE WHEN c.ttm_ok THEN (c.receivables / c.revenue_ttm
+                                + (c.inventory - c.payables) / c.cogs_ttm) * 365 END
+                                                                          AS cash_conversion_cycle_days,
+       CASE WHEN c.ttm_ok THEN c.ocf_ttm / c.net_income_ttm END           AS cash_conversion_ttm,
+       c.inventory,
+       c.inventory / ly.inventory - 1                                     AS inventory_yoy
+FROM checked AS c
+LEFT JOIN quarterly AS ly ON ly.period_end = date(c.period_end, '-1 year')
+ORDER BY c.period_end;
