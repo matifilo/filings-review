@@ -7,6 +7,7 @@ RULES (a program checks every one of them):
    averages of your own. If a number you want is not in the pack, do not use it.
 2. Every number you write must be followed immediately by the id of the fact it comes from, in this form:
    [F:fact.id]. Example: "Revenue was USD 1,218.8m [F:cur.revenue], up 2.8% [F:cur.revenue_yoy]."
+         Write small counts in words ("eight quarters", not "8 quarters"): a digit without an id is an error.
 3. Write each number exactly as its display value (e.g. "USD 1,218.8m", "44.9%", "+1.5 pp", "55 days",
    "1.25x"). For a negative value you may drop the minus sign when the words say it fell.
 4. Name periods the way the pack does: "Q2 FY2027", "6M FY2027". Period names are not numbers and need no id.

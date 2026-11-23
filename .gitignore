@@ -3,3 +3,4 @@ sec_contact.txt
 data/explore/
 data/*.db
 .env
+__pycache__/
