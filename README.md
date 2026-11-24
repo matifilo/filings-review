@@ -9,6 +9,12 @@ Only an approved draft becomes the report. First company: **Logitech (LOGI), Q2 
 
 **[Read the full report (PDF, 3 pages)](output/report.pdf)**. In this run, 55 numbers in the text were matched to 51 facts, and the first draft passed the checker.
 
+## Interactive dashboard
+
+**[Open the dashboard on Tableau Public](https://public.tableau.com/app/profile/mateusz.filochowski/viz/logitech-kpis/LogitechKPIs)**: the same KPIs for all 70 quarters since FY2010 (revenue and growth, gross and operating margin, working-capital days, free cash flow and buybacks), with a fiscal-year slider and the flagged quarter marked. Its data is `output/kpi_quarterly.xlsx`, written by `export_tableau.py`, so the dashboard and the report show the same numbers and the same flags.
+
+[![The Logitech KPI dashboard on Tableau Public](docs/tableau-dashboard.png)](https://public.tableau.com/app/profile/mateusz.filochowski/viz/logitech-kpis/LogitechKPIs)
+
 ## Why it is built this way
 
 An AI that writes about financial numbers will sometimes get a number wrong, and a wrong number in a
@@ -43,7 +49,8 @@ flowchart LR
 | 5 Write | `commentary.py`, `prompts/system.md` | Sends the rules and the facts pack to Claude (Anthropic API) |
 | 6 Check | `validate.py`, `review.py` | Checks the draft; sends the exact problems back for a rewrite, at most three rounds; saves every round in `output/validation_log.json` |
 | 7 Report | `report.py`, `templates/report.html` | Lays out the approved review as a research note with exhibits, and prints the PDF |
-| All | `run.py` | Runs steps 1 to 7 and stops at the first failure |
+| 4b Export | `export_tableau.py` | Writes the KPI table with readable labels and the data flags to `output/kpi_quarterly.csv` and `.xlsx`, the data behind the dashboard |
+| All | `run.py` | Runs every step in order and stops at the first failure |
 
 ## The controls
 
@@ -95,7 +102,7 @@ Two private files, both ignored by git:
 .venv\Scripts\python run.py                 # download fresh data from the SEC first
 ```
 
-The result is `output/report.pdf`. To check a draft without calling the AI: `.venv\Scripts\python validate.py`.
+The result is `output/report.pdf`, plus `output/kpi_quarterly.csv` and `.xlsx` for the dashboard. To check a draft without calling the AI: `.venv\Scripts\python validate.py`.
 
 ## Tests
 
