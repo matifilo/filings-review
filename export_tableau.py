@@ -79,6 +79,12 @@ if out["Quarter end"].duplicated().any():
 path = Path("output/kpi_quarterly.csv")
 out.to_csv(path, index=False, encoding="utf-8-sig")  # utf-8-sig: Tableau and Excel read the en dash correctly
 
+# 5) Excel copy for Tableau: numbers and dates are stored as numbers and dates there,
+#    so Tableau does not have to guess them from text (that guess depends on Windows' language settings)
+excel = out.copy()
+excel["Quarter end"] = pd.to_datetime(excel["Quarter end"]).dt.date
+excel.to_excel("output/kpi_quarterly.xlsx", index=False, sheet_name="kpi_quarterly")
+
 latest = out.iloc[-1]
 print(f"Quarters: {len(out)}, {out['Quarter'].iloc[0]} to {latest['Quarter']}")
 print(f"Latest: {latest['Quarter']} ({latest['Months']}): revenue USD {latest['Revenue (USD m)']:,.1f}m, "
@@ -86,4 +92,4 @@ print(f"Latest: {latest['Quarter']} ({latest['Months']}): revenue USD {latest['R
       f"({latest['Cash conversion cycle change YoY (days)']:+.0f} vs a year earlier)")
 for _, row in out[out["Data flag"].notna()].iterrows():
     print(f"  flag: {row['Quarter']}: {row['Data flag']}")
-print(f"Saved: {path}")
+print("Saved: output\\kpi_quarterly.csv and output\\kpi_quarterly.xlsx")
