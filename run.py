@@ -13,6 +13,7 @@ STEPS = [
     ("download.py", "Download the SEC company facts snapshot"),
     ("load.py", "Load the chosen line items into SQLite and build the SQL views"),
     ("facts.py", "Build the facts pack and the data flags"),
+    ("export_tableau.py", "Export the KPI table for the Tableau dashboard"),
     ("review.py", "Claude writes the review, the checker approves it (uses the API)"),
     ("report.py", "Lay out the report and print the PDF"),
 ]
