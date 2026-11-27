@@ -1,7 +1,7 @@
 """Phase 6: write -> check -> revise, until the checker passes (at most 3 rounds).
 
 Only a draft that passes every check becomes output/review.md.
-Every round is recorded in output/validation_log.json.
+Every round is recorded in output/validation_log.json as soon as it is checked.
 """
 import json
 from datetime import datetime
@@ -11,6 +11,13 @@ import commentary
 import validate
 
 MAX_ROUNDS = 3
+OUT = Path("output")
+
+# 0) Start clean. Until this run approves a review, there is none: if anything below stops the run
+#    (no API key, a network error, three rejected drafts), no review or report from an earlier run is left
+#    to be printed or opened as if it were new.
+for old in ("review.md", "report.html", "report.pdf", "draft.md", "validation_log.json"):
+    (OUT / old).unlink(missing_ok=True)
 
 pack = commentary.load_pack()
 system = commentary.build_system(pack)
@@ -33,6 +40,8 @@ for round_no in range(1, MAX_ROUNDS + 1):
           f"cache read {usage['cache_read']}, cache write {usage['cache_write']}, out {usage['output']}")
     for e in errors:
         print("   -", e)
+    (OUT / "draft.md").write_text(draft, encoding="utf-8")  # saved each round, so a crash keeps the evidence
+    (OUT / "validation_log.json").write_text(json.dumps(log, indent=1), encoding="utf-8")
     if not errors:
         break
 
@@ -44,12 +53,9 @@ for round_no in range(1, MAX_ROUNDS + 1):
                      + "\n\nRewrite the whole review and fix every problem. Keep everything that was "
                        "correct. Follow all the rules. Return only the review."})
 
-# 5) Save the evidence, and publish the review only if it passed
-Path("output/draft.md").write_text(draft, encoding="utf-8")
-Path("output/validation_log.json").write_text(json.dumps(log, indent=1), encoding="utf-8")
-approved = Path("output/review.md")
+# 5) Publish the review only if it passed
+approved = OUT / "review.md"
 if errors:
-    approved.unlink(missing_ok=True)  # never leave an older approved review lying around
     raise SystemExit(f"FAILED after {MAX_ROUNDS} rounds. Nothing approved. "
                      "Read output/validation_log.json and fix the prompt or the data.")
 approved.write_text(draft, encoding="utf-8")

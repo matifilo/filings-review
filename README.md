@@ -47,7 +47,8 @@ flowchart LR
 | 3 Calculate | `sql/views.sql` | Turns year-to-date figures into single quarters (Q4 = full year minus nine months), then margins, year-on-year growth, trailing-twelve-month working-capital days and cash conversion (only from four full quarters, and only over a profit) |
 | 4 Facts pack | `facts.py` | Writes the only numbers the AI may use, each with an id such as `cur.revenue`, already rounded as the report shows them; flags figures that look out of line |
 | 5 Write | `commentary.py`, `prompts/system.md` | Sends the rules and the facts pack to Claude (Anthropic API) |
-| 6 Check | `validate.py`, `review.py` | Checks the draft; sends the exact problems back for a rewrite, at most three rounds; saves every round in `output/validation_log.json` |
+| 6 Check | `validate.py`, `review.py` | Checks the draft: every number against its fact, and the words next to it (direction, period); sends the exact problems back for a rewrite, at most three rounds; saves every round in `output/validation_log.json` |
+| 6b Test the checker | `eval_checker.py` | Breaks four real reviews on purpose, one mistake at a time, and counts how many broken copies the checker catches |
 | 7 Report | `report.py`, `templates/report.html` | Lays out the approved review as a research note with exhibits, and prints the PDF |
 | 4b Export | `export_tableau.py` | Writes the KPI table with readable labels and the data flags to `output/kpi_quarterly.csv` and `.xlsx`, the data behind the dashboard |
 | All | `run.py` | Runs every step in order and stops at the first failure |
@@ -55,17 +56,37 @@ flowchart LR
 ## The controls
 
 - **Every number needs a source.** Each number Claude writes must be followed by a fact id, e.g. `USD 1,218.8m [F:cur.revenue]`. The checker rejects a number whose value differs from its fact, a fact id that does not exist, and any number with no id at all.
+- **The words must agree with the numbers.** The checker rejects "net income fell 5.5%" when it rose 5.5%, "fell to USD 212.3m from USD 148.8m" with the two figures swapped, "USD 1,218.8m in Q1 FY2027" for a Q2 figure, and "a year ago" after this quarter's figure. A minus sign may only be dropped when the words say it fell. "Improved" and "weakened" are not read as up or down: a cash conversion cycle that improved went down.
+- **Plain Markdown only.** The review is turned into HTML for the report, so the checker rejects any HTML tag in it.
 - **No new arithmetic by the AI.** All calculations happen in SQL and Python. The prompt forbids the model from adding, subtracting or averaging, and the checker rejects any figure it cannot trace.
 - **Data flags must be reported.** When a figure looks out of line (Q1 FY2027 gross margin of 49.5% against a median of 43.2%), the review must mention it under Data caveats, and must not invent a reason for it.
-- **Missing data stays missing.** A figure the filings do not provide is listed as missing, and the review must say so instead of estimating.
+- **Missing data stays missing.** A figure the filings do not provide is listed as missing, and the review must say so instead of estimating. The report shows it as n/a, and every exhibit keeps its eight quarters, so a gap never moves a value under the wrong quarter.
 - **Structure and length.** Five sections in a fixed order, 450 to 650 words, at least 12 cited numbers, no placeholders.
-- **A failed run leaves nothing behind.** If the draft still fails after three rounds, the old approved review is deleted, so a stale review can never be printed as if it were new.
+- **A failed run leaves nothing behind.** `review.py` deletes the previous review, report and log before it calls the AI. If the run stops for any reason (no API key, a network error, three rejected drafts), no old review or PDF is left to be opened as if it were new.
 - **The report checks again.** `report.py` re-checks the approved review against the current facts pack before printing. If the data changed since approval, it refuses.
-- **Everything is recorded.** Each round's draft, problems found and token usage are saved in `output/validation_log.json`.
+- **Everything is recorded.** Each round's draft, problems found and token usage are saved in `output/validation_log.json` as soon as the round is checked, so a run that crashes keeps its evidence.
+
+## How often the checker catches a mistake
+
+`eval_checker.py` takes the four reviews Claude wrote from the same facts pack while I built this, breaks each one in one place at a time, and counts how many broken copies the checker rejects. It also makes 200 harmless edits (a synonym, a correct period added) that must still pass. No AI is involved, so it costs nothing to run.
+
+| Mistake put in | Broken copies | Caught before | Caught now |
+|---|---:|---:|---:|
+| Wrong number ("44.0%" for 44.9%) | 231 | 100% | 100% |
+| Wrong direction ("fell" for a rise, a minus sign dropped) | 63 | 0% | 94% |
+| This year's and last year's figure swapped ("fell to 212.3m from 148.8m") | 42 | 0% | 100% |
+| Wrong period ("in Q1 FY2027" after a Q2 figure) | 63 | 0% | 95% |
+| Raw HTML | 20 | 0% | 100% |
+| A cause the filings do not give ("because demand in Europe weakened") | 86 | 0% | 0% |
+| Harmless edits rejected by mistake | 200 | 0 | 0 |
+
+"Before" is the checker as it was when an outside review showed that it passed "net income fell 5.5%" for a 5.5% rise: it checked each number, but not the words around it. The last row matters as much as the others, because a checker that rejects correct text costs a rewrite round every time. To test that, I also ran the new rules on every draft in the git history. The first version flagged "the cash conversion cycle improved slightly to 44 days from 46 days", which is correct (a shorter cycle is better), so "improved" and "weakened" no longer count as direction words.
+
+What still gets through: "gross margin worsened by +1.5 pp" (whether up is better depends on the measure), a comparison split by another clause ("75 days, the highest of the last eight quarters, down from 66 days"), and a period named as the subject of an earlier clause ("only Q4 FY2025 grew more slowly, when revenue fell 0.1%"). Invented causes are not checked at all. That is the person's job. `eval_checker.py --missed` lists every broken copy that got through.
 
 ## What it does not catch (honest limits)
 
-- **It checks numbers, not reasoning.** An early draft called inventory days of 75 "the highest level in the series". The number was right; the claim was wrong (it reached 106 days in March 2022, outside the eight quarters the AI was shown). The checker passed it, because the claim is in words. I fixed it in the prompt (rule 9: say "the highest of the last eight quarters"). That makes the mistake less likely, but does not rule it out. This is why a person signs off.
+- **It checks numbers and the words next to them, not reasoning.** An early draft called inventory days of 75 "the highest level in the series". The number was right; the claim was wrong (it reached 106 days in March 2022, outside the eight quarters the AI was shown). The checker passed it, because the claim is in words. I fixed it in the prompt (rule 9: say "the highest of the last eight quarters"). That makes the mistake less likely, but does not rule it out. This is why a person signs off.
 - **Some quarters are calculated, not reported.** Companies do not report Q4 on its own, and most cash-flow figures are reported only year to date. These quarters are derived by subtraction, and the report's method notes say so.
 - **A flag is not an explanation.** The checker makes sure an unusual figure is reported; it cannot say why it happened.
 - **One company so far.** Line items and the company ID live in `config.py`, but Logitech's March year-end is still written into `sql/views.sql` and the report template. A company with a different year-end needs those changed. Banks and insurers need different measures altogether (version 1 covers non-financial companies only).
@@ -102,7 +123,9 @@ Two private files, both ignored by git:
 .venv\Scripts\python run.py                 # download fresh data from the SEC first
 ```
 
-The result is `output/report.pdf`, plus `output/kpi_quarterly.csv` and `.xlsx` for the dashboard. To check a draft without calling the AI: `.venv\Scripts\python validate.py`.
+The result is `output/report.pdf`, plus `output/kpi_quarterly.csv` and `.xlsx` for the dashboard. To check a draft without calling the AI: `.venv\Scripts\python validate.py`. To see how often the checker catches each kind of mistake: `.venv\Scripts\python eval_checker.py`.
+
+A run that stops before a review is approved deletes `output/review.md` and `output/report.pdf` (see the controls). `git restore output` brings back the copies in the repository.
 
 ## Tests
 
@@ -110,7 +133,11 @@ The result is `output/report.pdf`, plus `output/kpi_quarterly.csv` and `.xlsx` f
 .venv\Scripts\python -m pytest
 ```
 
-17 tests. Thirteen check that the checker passes an approved review and catches each kind of mistake: a wrong number, a number that only ends the same way, an unknown fact id, a number with no source, a placeholder, missing or reordered sections, an unreported data flag, a review that is too short. They run on frozen copies of a real facts pack and review (`tests/fixtures/`). Four check the SQL view on a small made-up database: a trailing-twelve-month figure stays empty when a quarter is missing, and cash conversion stays empty over a loss. None need an API key, and all take under a second.
+40 tests in three files. None need an API key, and together they take a few seconds.
+
+- `tests/test_validate.py` (34): the checker passes the four real reviews and catches each kind of mistake: a wrong number, a number that only ends the same way, an unknown fact id, a number with no source, a placeholder, missing or reordered sections, an unreported data flag, a review that is too short, a wrong direction, swapped figures, a wrong period, HTML. Nine correctly worded sentences must pass, and the catch rates in the table above must not fall. They run on frozen copies of a real facts pack and reviews (`tests/fixtures/`).
+- `tests/test_views.py` (4): the SQL view on a small made-up database. A trailing-twelve-month figure stays empty when a quarter is missing, and cash conversion stays empty over a loss.
+- `tests/test_runs.py` (2): the real scripts in a temporary folder. A run that stops before approval leaves no old review or PDF behind, and a report with missing facts shows n/a and keeps every value under its own quarter.
 
 ## About
 

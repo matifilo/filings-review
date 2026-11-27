@@ -2,12 +2,16 @@
 
 It reads only output/review.md, output/facts_pack.json and output/validation_log.json,
 so the report cannot show a number that is not in the facts pack.
+
+    .venv\\Scripts\\python report.py               HTML and PDF
+    .venv\\Scripts\\python report.py --html-only   HTML only (no Edge needed; the tests use this)
 """
 import html
 import json
 import math
 import re
 import subprocess
+import sys
 import tempfile
 import time
 from datetime import date
@@ -37,8 +41,9 @@ NAVY, MIST, FLAG, SOFT, RULE = "#0f2a44", "#a9b7c4", "#b4461a", "#4d5b69", "#d9d
 
 
 def short(fact):
-    """The value without 'USD', 'm' or 'days', for tables whose heading already gives the unit."""
-    return re.sub(r"^USD |m$| days$", "", fact["display"])
+    """The value without 'USD', 'm' or 'days', for tables whose heading already gives the unit.
+    A fact the filings do not provide (None) is shown as n/a, never left out or estimated."""
+    return re.sub(r"^USD |m$| days$", "", fact["display"]) if fact else "n/a"
 
 
 # 1) Commentary: every [F:id] becomes a small note number that links to its line in the notes list
@@ -77,7 +82,7 @@ KEY_DATA = [("Revenue, USD m", "revenue"), ("Revenue growth", "revenue_yoy"),
             ("Net income, USD m", "net_income"), ("Free cash flow, USD m", "free_cash_flow"),
             ("Cash, USD m", "cash"), ("Inventory days", "dio_days"),
             ("Cash cycle, days", "cash_conversion_cycle_days"), ("Cash conversion", "cash_conversion_ttm")]
-key_rows = "".join(f"<tr><td>{label}</td><td>{short(facts['cur.' + k])}</td><td>{short(facts['ly.' + k])}</td></tr>"
+key_rows = "".join(f"<tr><td>{label}</td><td>{short(facts.get('cur.' + k))}</td><td>{short(facts.get('ly.' + k))}</td></tr>"
                    for label, k in KEY_DATA)
 numbers = len(re.findall(r"\[F:", review))
 final = log[-1]
@@ -89,16 +94,24 @@ flag_notes = "".join(f'<p class="flag"><em>a</em> {f["period"]} {f["metric"].low
 
 
 # 3) Exhibit 1: eight-quarter table; flagged cells get an "a"
+#    The quarters come from every trend id, found or missing (facts.py lists a missing one with its period),
+#    so a quarter without, say, gross margin keeps its column and every value stays under its own quarter.
+TREND_ID = re.compile(r"q\d_fy\d{4}\.(\w+)")
+quarters = sorted({f["period"] for f in pack["facts"] + pack["missing"] if TREND_ID.fullmatch(f["id"])},
+                  key=lambda p: (int(p[-4:]), int(p[1])))  # 'Q2 FY2027' -> (2027, 2): oldest first
+
+
 def trend(metric):
-    """The eight trend facts for one measure, oldest first (ids like q2_fy2027.gross_margin)."""
-    return [f for f in pack["facts"] if re.fullmatch(r"q\d_fy\d{4}\." + metric, f["id"])]
+    """The trend facts for one measure, one per quarter in `quarters` (None where the data has none)."""
+    by_quarter = {f["period"]: f for f in pack["facts"] if TREND_ID.fullmatch(f["id"])
+                  and TREND_ID.fullmatch(f["id"]).group(1) == metric}
+    return [by_quarter.get(q) for q in quarters]
 
 
 def mark(f):
-    return '<sup class="fl">a</sup>' if (f["period"], f["label"].lower()) in flagged else ""
+    return '<sup class="fl">a</sup>' if f and (f["period"], f["label"].lower()) in flagged else ""
 
 
-quarters = [f["period"] for f in trend("gross_margin")]
 quarter_heads = "".join(f"<th>{q.replace('FY20', 'FY')}</th>" for q in quarters)  # Q2 FY2027 -> Q2 FY27
 summary_rows = "".join(
     f"<tr><td>{label}</td>" + "".join(f"<td>{short(f)}{mark(f)}</td>" for f in trend(metric)) + "</tr>"
@@ -117,12 +130,15 @@ def ticks_for(lo, hi):
 
 
 def chart(series, bars=False):
-    """series: list of (name, colour, facts). Bars for one series, lines otherwise."""
+    """series: list of (name, colour, facts), one fact per quarter in `quarters` (None = no data).
+    Bars for one series, lines otherwise. A missing quarter is a gap, never a point at zero."""
     W, H, left, right, top, bottom = 210, 128, 18, 42, 6, 24
-    values = [f["value"] for _, _, pts in series for f in pts]
+    values = [f["value"] for _, _, pts in series for f in pts if f]
+    if not values:
+        return '<p class="flag">No data for this exhibit.</p>'
     ticks = ticks_for(min(values + [0]) if bars else min(values), max(values))
     lo, hi = ticks[0], ticks[-1]
-    n = len(series[0][2])
+    n = len(quarters)
     slot = (W - left - right) / n
     def x(i): return left + slot * (i + 0.5)
     def y(v): return top + (hi - v) * (H - top - bottom) / (hi - lo)
@@ -131,28 +147,31 @@ def chart(series, bars=False):
     for t in ticks:  # light horizontal gridlines with their values on the left
         s.append(f'<line x1="{left}" x2="{W - right}" y1="{y(t):.1f}" y2="{y(t):.1f}" stroke="{RULE}" stroke-width=".6"/>'
                  f'<text x="{left - 4}" y="{y(t) + 3:.1f}" font-size="8" fill="{SOFT}" text-anchor="end">{t:g}</text>')
-    for i, f in enumerate(series[0][2]):  # two-line quarter labels: Q3 / FY25
-        q, fy = f["period"].split()
+    for i, period in enumerate(quarters):  # two-line quarter labels: Q3 / FY25
+        q, fy = period.split()
         s.append(f'<text x="{x(i):.1f}" y="{H - 13}" font-size="7.5" fill="{SOFT}" text-anchor="middle">{q}</text>'
                  f'<text x="{x(i):.1f}" y="{H - 4}" font-size="7.5" fill="{SOFT}" text-anchor="middle">{fy.replace("FY20", "FY")}</text>')
     for name, colour, pts in series:
+        shown = [(i, f) for i, f in enumerate(pts) if f]  # the quarters that have a value
         if bars:  # muted bars, the quarter under review in navy
-            for i, f in enumerate(pts):
+            for i, f in shown:
                 top_y, base_y = sorted((y(f["value"]), y(0)))
                 c = NAVY if i == n - 1 else MIST
                 s.append(f'<rect x="{x(i) - slot * .3:.1f}" y="{top_y:.1f}" width="{slot * .6:.1f}" '
                          f'height="{max(base_y - top_y, .8):.1f}" fill="{c}"><title>{f["period"]}: {f["display"]}</title></rect>')
-        else:
-            d = " ".join(f"{'M' if i == 0 else 'L'}{x(i):.1f},{y(f['value']):.1f}" for i, f in enumerate(pts))
+        else:  # the line starts again (M) after a missing quarter instead of bridging it
+            d = " ".join(f"{'L' if i > 0 and pts[i - 1] else 'M'}{x(i):.1f},{y(f['value']):.1f}" for i, f in shown)
             s.append(f'<path d="{d}" fill="none" stroke="{colour}" stroke-width="1.5" stroke-linejoin="round"/>')
-            for i, f in enumerate(pts):
+            for i, f in shown:
                 s.append(f'<circle cx="{x(i):.1f}" cy="{y(f["value"]):.1f}" r="5" fill="transparent">'
                          f'<title>{f["period"]}: {f["display"]}</title></circle>')
-        for i, f in enumerate(pts):  # ring flagged quarters
+        for i, f in shown:  # ring flagged quarters
             if mark(f):
                 s.append(f'<circle cx="{x(i):.1f}" cy="{y(f["value"]):.1f}" r="3.2" fill="#fff" stroke="{FLAG}" stroke-width="1.2"/>'
                          f'<text x="{x(i) + 5:.1f}" y="{y(f["value"]) - 4:.1f}" font-size="8" font-style="italic" fill="{FLAG}">a</text>')
         last = pts[-1]  # label the latest value at the right-hand end, with the series name above it
+        if not last:
+            continue  # no value for the quarter under review: nothing to label
         end_y = y(last["value"])
         if name:
             s.append(f'<text x="{W - right + 4}" y="{end_y - 3:.1f}" font-size="7.5" fill="{SOFT}">{name}</text>')
@@ -186,9 +205,12 @@ page = Template(Path("templates/report.html").read_text(encoding="utf-8")).subst
 )
 html_path, pdf_path = Path("output/report.html"), Path("output/report.pdf")
 html_path.write_text(page, encoding="utf-8")
+pdf_path.unlink(missing_ok=True)  # never leave an old PDF behind if printing fails (or is skipped)
+if "--html-only" in sys.argv:
+    print(f"Report: {numbers} numbers linked to {len(notes)} notes -> {html_path} (no PDF: --html-only)")
+    raise SystemExit(0)
 
 EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-pdf_path.unlink(missing_ok=True)  # never leave an old PDF behind if printing fails
 with tempfile.TemporaryDirectory() as profile:
     subprocess.run([EDGE, "--headless=new", "--disable-gpu", "--no-first-run", f"--user-data-dir={profile}",
                     "--no-pdf-header-footer", "--virtual-time-budget=15000",

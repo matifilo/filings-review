@@ -1,0 +1,46 @@
+## Headline
+
+Logitech International grew revenue to USD 1,218.8m [F:cur.revenue] in Q2 FY2027, up 2.8% [F:cur.revenue_yoy]. Net income rose 5.5% [F:cur.net_income_yoy] to USD 180.0m [F:cur.net_income]. Cash generation weakened: free cash flow fell to USD 148.8m [F:cur.free_cash_flow] from USD 212.3m [F:ly.free_cash_flow], while share buybacks reached USD 170.8m [F:cur.buybacks].
+
+## Growth and profitability
+
+Top-line growth slowed. The 2.8% [F:q2_fy2027.revenue_yoy] rate in Q2 FY2027 compares with 6.9% [F:q1_fy2027.revenue_yoy] in Q1 FY2027, 7.4% [F:q4_fy2026.revenue_yoy] in Q4 FY2026 and 6.3% [F:ly.revenue_yoy] a year ago. Of the last eight quarters, only Q4 FY2025 grew more slowly, when revenue fell 0.1% [F:q4_fy2025.revenue_yoy]. For 6M FY2027, revenue was USD 2,446.1m [F:ytd.revenue], up 4.8% [F:ytd.revenue_yoy]. Net income for the half was USD 415.7m [F:ytd.net_income], up 31.3% [F:ytd.net_income_yoy].
+
+Gross margin was 44.9% [F:cur.gross_margin], a gain of +1.5 pp [F:cur.gross_margin_change_yoy] on the 43.4% [F:ly.gross_margin] of Q2 FY2026.
+
+Operating expenses absorbed most of that gain. Selling and marketing expense rose to 18.0% [F:cur.selling_pct] of revenue from 16.8% [F:ly.selling_pct]. R&D rose to 6.8% [F:cur.rnd_pct] from 6.4% [F:ly.rnd_pct]. General and admin expense held at 3.5% [F:cur.admin_pct], the same as the 3.5% [F:ly.admin_pct] a year earlier.
+
+As a result, operating margin improved only modestly. It reached 16.5% [F:cur.operating_margin], up +0.3 pp [F:cur.operating_margin_change_yoy] from 16.1% [F:ly.operating_margin]. Net margin was 14.8% [F:cur.net_margin] against 14.4% [F:ly.net_margin].
+
+The filings data does not explain why spending ratios rose.
+
+## Working capital and cash
+
+Operating cash flow fell to USD 163.6m [F:cur.operating_cash_flow] from USD 228.8m [F:ly.operating_cash_flow]. Trailing cash conversion eased to 1.25x [F:cur.cash_conversion_ttm] from 1.29x [F:ly.cash_conversion_ttm], which still means cash flow exceeds reported earnings. Even with buybacks above free cash flow this quarter, cash and cash equivalents stood at USD 1,507.6m [F:cur.cash], up from USD 1,375.8m [F:ly.cash] a year ago.
+
+Inventory is the main working-capital pressure point. It reached USD 556.8m [F:cur.inventory], up 7.6% [F:cur.inventory_yoy] against USD 517.7m [F:ly.inventory]. A year earlier, inventory growth was -0.5% [F:ly.inventory_yoy]. Inventory is therefore growing faster than revenue.
+
+Days inventory outstanding rose to 75 days [F:cur.dio_days] from 70 days [F:ly.dio_days]. That is the highest of the last eight quarters, up from a low of 60 days [F:q3_fy2026.dio_days] in Q3 FY2026.
+
+Two other measures offset this:
+
+- **Payables:** days payables outstanding lengthened to 87 days [F:cur.dpo_days] from 79 days [F:ly.dpo_days].
+- **Receivables:** days sales outstanding was unchanged at 55 days [F:cur.dso_days], matching 55 days [F:ly.dso_days].
+
+Together, these brought the cash conversion cycle down to 44 days [F:cur.cash_conversion_cycle_days] from 46 days [F:ly.cash_conversion_cycle_days].
+
+## What to watch next quarter
+
+- **Revenue momentum:** whether growth recovers toward the rates of recent quarters or stays near 2.8% [F:cur.revenue_yoy]. The drivers of the slowdown are not in the data.
+- **Inventory:** whether days inventory outstanding of 75 days [F:cur.dio_days] comes down, or keeps rising while sales growth slows.
+- **Selling and marketing intensity:** whether the 18.0% [F:cur.selling_pct] ratio continues to offset gross margin gains. The reason for the increase is not disclosed in the pack.
+- **Cash returns:** whether buybacks keep exceeding free cash flow, and how the lower operating cash flow develops.
+- **Payables:** whether the longer payables period of 87 days [F:cur.dpo_days] is sustained, since it currently masks the inventory build in the cash conversion cycle.
+
+## Data caveats
+
+- **Q1 FY2027 gross margin:** the reported 49.5% [F:q1_fy2027.gross_margin] is well above the other recent quarters. It is flagged as an unusual figure that needs checking against the filing before it is relied on.
+- **Q1 FY2027 operating margin:** the reported 21.1% [F:q1_fy2027.operating_margin] is flagged as an unusual move against the same quarter of the prior year, and also needs checking.
+- **Derived figures:** fourth-quarter figures and most quarterly cash flows are derived by subtracting the previous year-to-date total from the current one. They may therefore carry restatement effects.
+- **Working-capital days:** these use quarter-end balances against trailing-twelve-month flows.
+- **Completeness:** no items are listed as missing from the facts pack.

@@ -9,7 +9,8 @@ RULES (a program checks every one of them):
    [F:fact.id]. Example: "Revenue was USD 1,218.8m [F:cur.revenue], up 2.8% [F:cur.revenue_yoy]."
          Write small counts in words ("eight quarters", not "8 quarters"): a digit without an id is an error.
 3. Write each number exactly as its display value (e.g. "USD 1,218.8m", "44.9%", "+1.5 pp", "55 days",
-   "1.25x"). For a negative value you may drop the minus sign when the words say it fell.
+   "1.25x"). For a negative value you may drop the minus sign only when the words say so
+   ("fell 0.1%", "a decline of 0.1%", "an outflow of USD 40.9m").
 4. Name periods the way the pack does: "Q2 FY2027", "6M FY2027". Period names are not numbers and need no id.
 5. Every item in "data_flags" must be reported in the Data caveats section as an unusual figure that needs
    checking. Do not explain why it happened: the pack does not say.
@@ -19,6 +20,10 @@ RULES (a program checks every one of them):
 8. Never use placeholders, templates or curly brackets. Write real sentences with real numbers.
 9. The trend facts cover only the last eight quarters. Never call a figure the highest, lowest or a
    record "in the series" or "ever": say "the highest of the last eight quarters".
+10. The words must agree with the numbers. "Rose", "up" and "higher" only for an increase; "fell",
+   "down", "eased" and "lower" only for a decrease. In "X from Y" and "X against Y", Y is the earlier
+   figure. A period named next to a number ("in Q1 FY2027", "a year ago") must be that number's period.
+11. Plain Markdown only: no HTML tags.
 
 FORMAT
 - Markdown, 450 to 650 words, plain English, no tables.
