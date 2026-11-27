@@ -41,6 +41,19 @@ rows_before = len(facts)
 facts = facts.sort_values(["filed", "priority"], ascending=[False, True])
 facts = facts.drop_duplicates(subset=["line_item", "end", "months"], keep="first")
 
+# 4b) A payment cannot be negative. Logitech's amended 10-Q for April-June 2010 tagged capex as negative
+#     for that quarter (-11.9m) and for the same quarter a year earlier (-7.7m, April-June 2009).
+#     A newer filing corrected 2010 to +11.9m; 2009 was never corrected.
+#     We do not guess the sign: the value is dropped, so the quarter shows as a gap, and we say so.
+#     This runs after de-duplication on purpose: if the NEWEST filing has the wrong sign,
+#     we do not fall back on an older figure that it may have restated.
+PAYMENTS = ["capex", "buybacks"]
+wrong_sign = facts["line_item"].isin(PAYMENTS) & (facts["val"] < 0)
+for _, r in facts[wrong_sign].iterrows():
+    print(f"  dropped: {r['line_item']} {r['start']} to {r['end']} = {r['val']:,.0f} "
+          f"(a payment cannot be negative; {r['form']} filed {r['filed']})")
+facts = facts[~wrong_sign]
+
 # 5) Rebuild the database from scratch and load the clean table
 facts = facts.rename(columns={"start": "period_start", "end": "period_end", "val": "value"})
 columns = ["statement", "line_item", "period_start", "period_end", "months", "value", "tag", "form", "filed"]

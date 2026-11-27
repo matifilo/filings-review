@@ -92,4 +92,19 @@ print(f"Latest: {latest['Quarter']} ({latest['Months']}): revenue USD {latest['R
       f"({latest['Cash conversion cycle change YoY (days)']:+.0f} vs a year earlier)")
 for _, row in out[out["Data flag"].notna()].iterrows():
     print(f"  flag: {row['Quarter']}: {row['Data flag']}")
+
+# 6) Count what is empty, not only what fails. facts.py checks only the figures the review uses; this checks every quarter.
+#    Growth needs a year of history and TTM figures need four quarters, so the first quarters are empty by design.
+print("Empty cells (blank on the dashboard):")
+for name in out.columns.drop("Data flag"):
+    empty = out.index[out[name].isna()].tolist()
+    if not empty:
+        continue
+    spans, start = [], empty[0]
+    for i, following in zip(empty, empty[1:] + [None]):
+        if following != i + 1:  # the end of a run of back-to-back quarters
+            first, last = out["Quarter"][start], out["Quarter"][i]
+            spans.append(first if start == i else f"{first} to {last}")
+            start = following
+    print(f"  {name}: {len(empty)}  ({', '.join(spans)})")
 print("Saved: output\\kpi_quarterly.csv and output\\kpi_quarterly.xlsx")

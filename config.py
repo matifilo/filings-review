@@ -20,7 +20,8 @@ LINE_ITEMS = {
     "operating_income":    ("income",   ["OperatingIncomeLoss"]),
     "income_tax":          ("income",   ["IncomeTaxExpenseBenefit"]),
     "net_income":          ("income",   ["NetIncomeLoss", "NetIncomeLossAvailableToCommonStockholdersBasic"]),
-    "operating_cash_flow": ("cashflow", ["NetCashProvidedByUsedInOperatingActivities"]),
+    "operating_cash_flow": ("cashflow", ["NetCashProvidedByUsedInOperatingActivities",
+                                         "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations"]),  # used 2010-2015
     "capex":               ("cashflow", ["PaymentsToAcquirePropertyPlantAndEquipment"]),
     "buybacks":            ("cashflow", ["PaymentsForRepurchaseOfCommonStock"]),
     "cash":                ("balance",  ["CashAndCashEquivalentsAtCarryingValue"]),

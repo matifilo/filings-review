@@ -99,24 +99,39 @@ ORDER BY f.period_end;
 -- 3) Ratios, growth and trailing-twelve-month (TTM) metrics, one row per quarter.
 CREATE VIEW kpi_quarterly AS
 WITH ttm AS (
-    -- Rolling sums of the last 4 quarters (like =SUM(B2:B5) dragged down in Excel)
+    -- Rolling sums of the last 4 quarters (like =SUM(B2:B5) dragged down in Excel).
+    -- SUM skips empty values without saying so: one quarter of cash flow would pass as a year.
+    -- So we also count how many of the 4 quarters really have a value (COUNT(x) skips empties too).
     SELECT q.*,
-           SUM(revenue)             OVER last4 AS revenue_ttm,
-           SUM(cogs)                OVER last4 AS cogs_ttm,
-           SUM(net_income)          OVER last4 AS net_income_ttm,
-           SUM(operating_cash_flow) OVER last4 AS ocf_ttm,
-           COUNT(*)                 OVER last4 AS n_quarters,
-           MIN(period_end)          OVER last4 AS window_start
+           SUM(revenue)               OVER last4 AS revenue_ttm,
+           SUM(cogs)                  OVER last4 AS cogs_ttm,
+           SUM(net_income)            OVER last4 AS net_income_ttm,
+           SUM(operating_cash_flow)   OVER last4 AS ocf_ttm,
+           COUNT(*)                   OVER last4 AS n_quarters,
+           COUNT(cogs)                OVER last4 AS n_cogs,
+           COUNT(net_income)          OVER last4 AS n_net_income,
+           COUNT(operating_cash_flow) OVER last4 AS n_ocf,
+           MIN(period_end)            OVER last4 AS window_start
     FROM quarterly AS q
     WINDOW last4 AS (ORDER BY period_end ROWS BETWEEN 3 PRECEDING AND CURRENT ROW)
 ),
 checked AS (
     -- A TTM figure only counts if the 4 rows really are 4 back-to-back quarters
     -- (e.g. for 2026-09-30 the window must start at 2025-12-31). Otherwise it is left empty.
+    -- (revenue is never empty here: the quarterly view keeps only quarters that have it)
     SELECT *,
            (n_quarters = 4
             AND window_start = date(period_end, 'start of month', '-8 months', '-1 day')) AS ttm_ok
     FROM ttm
+),
+gated AS (
+    -- ...and only if every one of the 4 quarters has the values it adds up.
+    -- Cash conversion also needs positive earnings: cash flow over a loss has no meaning
+    -- (June 2015: USD 125m of cash over a net loss of USD 3m would show as -42x).
+    SELECT *,
+           (ttm_ok AND n_cogs = 4) AS cogs_ok,
+           (ttm_ok AND n_ocf = 4 AND n_net_income = 4 AND net_income_ttm > 0) AS cash_ok
+    FROM checked
 )
 SELECT c.period_end,
        c.fiscal_year,
@@ -145,16 +160,16 @@ SELECT c.period_end,
        c.cash,
 
        -- Working capital, in days (balance at quarter end vs the last 12 months of flows)
-       CASE WHEN c.ttm_ok THEN c.revenue_ttm END                          AS revenue_ttm,
-       CASE WHEN c.ttm_ok THEN c.receivables / c.revenue_ttm * 365 END    AS dso_days,
-       CASE WHEN c.ttm_ok THEN c.inventory   / c.cogs_ttm    * 365 END    AS dio_days,
-       CASE WHEN c.ttm_ok THEN c.payables    / c.cogs_ttm    * 365 END    AS dpo_days,
-       CASE WHEN c.ttm_ok THEN (c.receivables / c.revenue_ttm
-                                + (c.inventory - c.payables) / c.cogs_ttm) * 365 END
+       CASE WHEN c.ttm_ok  THEN c.revenue_ttm END                         AS revenue_ttm,
+       CASE WHEN c.ttm_ok  THEN c.receivables / c.revenue_ttm * 365 END   AS dso_days,
+       CASE WHEN c.cogs_ok THEN c.inventory   / c.cogs_ttm    * 365 END   AS dio_days,
+       CASE WHEN c.cogs_ok THEN c.payables    / c.cogs_ttm    * 365 END   AS dpo_days,
+       CASE WHEN c.cogs_ok THEN (c.receivables / c.revenue_ttm
+                                 + (c.inventory - c.payables) / c.cogs_ttm) * 365 END
                                                                           AS cash_conversion_cycle_days,
-       CASE WHEN c.ttm_ok THEN c.ocf_ttm / c.net_income_ttm END           AS cash_conversion_ttm,
+       CASE WHEN c.cash_ok THEN c.ocf_ttm / c.net_income_ttm END          AS cash_conversion_ttm,
        c.inventory,
        c.inventory / ly.inventory - 1                                     AS inventory_yoy
-FROM checked AS c
+FROM gated AS c
 LEFT JOIN quarterly AS ly ON ly.period_end = date(c.period_end, '-1 year')
 ORDER BY c.period_end;

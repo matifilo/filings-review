@@ -31,7 +31,7 @@ CFO pack costs more than the time saved. So the work is split:
 
 ```mermaid
 flowchart LR
-    A["SEC EDGAR<br/>XBRL data"] --> B["SQLite<br/>1,454 rows"]
+    A["SEC EDGAR<br/>XBRL data"] --> B["SQLite<br/>1,466 rows"]
     B --> C["SQL views<br/>quarters, margins,<br/>working-capital days"]
     C --> D["Facts pack<br/>80 facts with ids<br/>+ data flags"]
     D --> E["Claude writes<br/>the review"]
@@ -43,8 +43,8 @@ flowchart LR
 | Step | File | What it does |
 |---|---|---|
 | 1 Download | `download.py` | Saves everything the company has filed with the SEC (XBRL "company facts") as a dated snapshot in `data/raw/` |
-| 2 Load | `load.py`, `config.py`, `sql/schema.sql` | Takes 17 line items, removes duplicates (newest filing wins, so restatements replace old figures), loads them into SQLite |
-| 3 Calculate | `sql/views.sql` | Turns year-to-date figures into single quarters (Q4 = full year minus nine months), then margins, year-on-year growth, trailing-twelve-month working-capital days |
+| 2 Load | `load.py`, `config.py`, `sql/schema.sql` | Takes 17 line items, removes duplicates (newest filing wins, so restatements replace old figures), drops payments tagged with an impossible minus sign, loads them into SQLite |
+| 3 Calculate | `sql/views.sql` | Turns year-to-date figures into single quarters (Q4 = full year minus nine months), then margins, year-on-year growth, trailing-twelve-month working-capital days and cash conversion (only from four full quarters, and only over a profit) |
 | 4 Facts pack | `facts.py` | Writes the only numbers the AI may use, each with an id such as `cur.revenue`, already rounded as the report shows them; flags figures that look out of line |
 | 5 Write | `commentary.py`, `prompts/system.md` | Sends the rules and the facts pack to Claude (Anthropic API) |
 | 6 Check | `validate.py`, `review.py` | Checks the draft; sends the exact problems back for a rewrite, at most three rounds; saves every round in `output/validation_log.json` |
@@ -69,12 +69,12 @@ flowchart LR
 - **Some quarters are calculated, not reported.** Companies do not report Q4 on its own, and most cash-flow figures are reported only year to date. These quarters are derived by subtraction, and the report's method notes say so.
 - **A flag is not an explanation.** The checker makes sure an unusual figure is reported; it cannot say why it happened.
 - **One company so far.** Line items and the company ID live in `config.py`, but Logitech's March year-end is still written into `sql/views.sql` and the report template. A company with a different year-end needs those changed. Banks and insurers need different measures altogether (version 1 covers non-financial companies only).
-- **The data is only as good as the company's tagging.** Logitech switched its revenue tag in 2018 and used a different net income tag from 2011 to 2021; `config.py` lists the alternatives for each line item.
+- **The data is only as good as the company's tagging.** Logitech switched its revenue tag in 2018, used a different net income tag from 2011 to 2021 and a different operating cash flow tag from 2010 to 2015; `config.py` lists the alternatives for each line item. One amended filing tagged capital spending for April to June 2009 as a negative number. The loader drops it and says so, so free cash flow for April to September 2009 is blank rather than wrong (the second quarter is calculated from the first).
 
 ## Three things that went wrong while building it
 
 1. **A restated year.** In August 2013 Logitech filed an amended annual report that restated net income for the year to March 2011 from USD 128.46m to USD 131.17m. My first de-duplication rule kept the old figure. The rule is now "newest filing wins".
-2. **A silent gap.** Net income was empty for 40 of 70 quarters, with no error anywhere, because Logitech used a different tag for ten years. A pipeline can run cleanly and still be wrong: you have to count what is empty, not only what fails. I added the second tag, and the facts pack now lists every missing figure by name.
+2. **A silent gap.** Net income was empty for 40 of 70 quarters, with no error anywhere, because Logitech used a different tag for ten years. A pipeline can run cleanly and still be wrong: you have to count what is empty, not only what fails. I added the second tag, and the facts pack now lists every missing figure by name. Then it happened again: operating cash flow was empty for 15 quarters (2011 to 2015), and I did not see it, because the facts pack only checks the figures the review uses. An outside review found the symptom: six cash conversion ratios built from fewer than four quarters of cash flow, one of them 8.66×, because SQL's `SUM` quietly adds up whatever is there. Now a trailing-twelve-month figure needs four full quarters, and `export_tableau.py` counts the empty cells in every column.
 3. **A checker that was too strict.** On its first real draft the checker rejected the phrase "Q4 figures" as an uncited number. I tuned it on real output and added a test so the fix stays fixed.
 
 ## Cost
@@ -110,7 +110,7 @@ The result is `output/report.pdf`, plus `output/kpi_quarterly.csv` and `.xlsx` f
 .venv\Scripts\python -m pytest
 ```
 
-13 tests check that the checker passes an approved review and catches each kind of mistake: a wrong number, a number that only ends the same way, an unknown fact id, a number with no source, a placeholder, missing or reordered sections, an unreported data flag, a review that is too short. They run on frozen copies of a real facts pack and review (`tests/fixtures/`), need no API key, and take under a second.
+17 tests. Thirteen check that the checker passes an approved review and catches each kind of mistake: a wrong number, a number that only ends the same way, an unknown fact id, a number with no source, a placeholder, missing or reordered sections, an unreported data flag, a review that is too short. They run on frozen copies of a real facts pack and review (`tests/fixtures/`). Four check the SQL view on a small made-up database: a trailing-twelve-month figure stays empty when a quarter is missing, and cash conversion stays empty over a loss. None need an API key, and all take under a second.
 
 ## About
 
